@@ -1,3 +1,5 @@
+// src/middleware.ts
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
@@ -8,9 +10,16 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Define routes that require authentication and roles
-  const protectedRoutes = ['/api/admin/users'];
+  const protectedRoutes: { path: string; roles: string[] }[] = [
+    { path: '/api/admin/users', roles: ['SUPER_ADMIN'] },
+    { path: '/api/admin/employees', roles: ['SUPER_ADMIN', 'ADMIN'] },
+  ];
 
-  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
+  const matchedRoute = protectedRoutes.find((route) =>
+    pathname.startsWith(route.path)
+  );
+
+  if (matchedRoute) {
     const authHeader = request.headers.get('authorization');
 
     // If no authorization header is present, return unauthorized response
@@ -27,8 +36,8 @@ export async function middleware(request: NextRequest) {
       // Extract user ID and role from the payload
       const { userId, role } = payload as { userId: number; role: string };
 
-      // Check if the user is a SUPER_ADMIN
-      if (role !== 'SUPER_ADMIN') {
+      // Check if the user has the required role
+      if (!matchedRoute.roles.includes(role)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 
@@ -45,5 +54,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/admin/users/:path*'], // Protect all subpaths of /api/admin/users
+  matcher: ['/api/admin/:path*'],
 };
