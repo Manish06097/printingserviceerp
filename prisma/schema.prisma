@@ -10,43 +10,83 @@ generator client {
 }
 
 model User {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
-  email       String    @unique
+  email       String     @unique
   password    String
-  role        Role      @default(STAFF)
-  permissions Json      @default("{}")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  role        Role       @default(STAFF)
+  permissions Json       @default("{}")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   employee    Employee?
 }
 
 model Employee {
-  id          Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
-  email       String    @unique
+  email       String      @unique
   password    String
-  role        Role      @default(STAFF)
+  role        Role        @default(STAFF)
   startDate   DateTime
-  status      Status    @default(ACTIVE)
-  salary      Float     @default(0) // Set default value to 0 for existing rows
-  userId      Int       @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      Status      @default(ACTIVE)
+  salary      Float       @default(0)
+  userId      Int         @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   attendance  Attendance[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
-
 model Attendance {
-  id          Int       @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   employeeId  Int
-  employee    Employee  @relation(fields: [employeeId], references: [id])
+  employee    Employee           @relation(fields: [employeeId], references: [id])
   date        DateTime
   checkIn     DateTime?
   checkOut    DateTime?
-  status      AttendanceStatus @default(PRESENT)
+  status      AttendanceStatus   @default(PRESENT)
 }
+
+model StockType {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  stockItems StockItem[]
+}
+
+model StockItem {
+  id              Int               @id @default(autoincrement())
+  name            String
+  image           String?
+  stockTypeId     Int
+  quantityType    QuantityType
+  totalQuantity   Int
+  totalWeight     Float?
+  finalAmount     Float
+  status          StockStatus       @default(ACTIVE) // Moved status here
+  stockType       StockType         @relation(fields: [stockTypeId], references: [id])
+  stockEntryItems StockEntryItem[]  // Relation field
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model StockEntry {
+  id           Int              @id @default(autoincrement())
+  partyName    String           // Supplier name
+  dateReceived DateTime
+  stockItems   StockEntryItem[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model StockEntryItem {
+  id            Int         @id @default(autoincrement())
+  stockEntryId  Int
+  stockItemId   Int
+  stockEntry    StockEntry  @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  stockItem     StockItem   @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+  // Removed status field
+}
+
 
 enum Role {
   SUPER_ADMIN
@@ -63,4 +103,15 @@ enum AttendanceStatus {
   PRESENT
   ABSENT
   LEAVE
+}
+
+enum QuantityType {
+  GROSS
+  PACKET
+  WEIGHT
+}
+
+enum StockStatus {
+  ACTIVE
+  CONSUMED
 }
