@@ -1,4 +1,10 @@
 -- CreateEnum
+CREATE TYPE "PrintChargeCategory" AS ENUM ('printCharge1C1SP', 'printCharge2C', 'printCharge3C1SP', 'printCharge4C', 'printCharge5C', 'printCharge3SP', 'printCharge4SP', 'printCharge2SP');
+
+-- CreateEnum
+CREATE TYPE "JobStatus" AS ENUM ('INCOMPLETE', 'PENDING', 'ONGOING', 'COMPLETED');
+
+-- CreateEnum
 CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'STAFF');
 
 -- CreateEnum
@@ -102,21 +108,6 @@ CREATE TABLE "StockEntryItem" (
 );
 
 -- CreateTable
-CREATE TABLE "Party" (
-    "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-    "shortCode" TEXT NOT NULL,
-    "partyCompanyName" TEXT NOT NULL,
-    "phoneNumber" TEXT NOT NULL,
-    "address" TEXT,
-    "reference" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Party_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "JobWorkRateDetails" (
     "id" SERIAL NOT NULL,
     "partyId" INTEGER NOT NULL,
@@ -145,6 +136,48 @@ CREATE TABLE "JobWorkRateDetails" (
     CONSTRAINT "JobWorkRateDetails_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Party" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "shortCode" TEXT NOT NULL,
+    "partyCompanyName" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "address" TEXT,
+    "reference" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Party_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Job" (
+    "id" SERIAL NOT NULL,
+    "jobName" TEXT NOT NULL,
+    "partyId" INTEGER NOT NULL,
+    "jobType" TEXT NOT NULL,
+    "boardSize" TEXT NOT NULL,
+    "plateSize" TEXT NOT NULL,
+    "images" TEXT[],
+    "color" "PrintChargeCategory" NOT NULL,
+    "dripOff" TEXT,
+    "varnish" TEXT,
+    "lamination" TEXT,
+    "micro" TEXT,
+    "punching" TEXT,
+    "uv" TEXT,
+    "window" TEXT,
+    "foil" TEXT,
+    "scodix" TEXT,
+    "pasting" TEXT,
+    "jobStatus" "JobStatus" NOT NULL DEFAULT 'INCOMPLETE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Job_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -158,10 +191,10 @@ CREATE UNIQUE INDEX "Employee_userId_key" ON "Employee"("userId");
 CREATE UNIQUE INDEX "StockType_name_key" ON "StockType"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Party_shortCode_key" ON "Party"("shortCode");
+CREATE UNIQUE INDEX "JobWorkRateDetails_partyId_key" ON "JobWorkRateDetails"("partyId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "JobWorkRateDetails_partyId_key" ON "JobWorkRateDetails"("partyId");
+CREATE UNIQUE INDEX "Party_shortCode_key" ON "Party"("shortCode");
 
 -- AddForeignKey
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -180,3 +213,6 @@ ALTER TABLE "StockEntryItem" ADD CONSTRAINT "StockEntryItem_stockItemId_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "JobWorkRateDetails" ADD CONSTRAINT "JobWorkRateDetails_partyId_fkey" FOREIGN KEY ("partyId") REFERENCES "Party"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Job" ADD CONSTRAINT "Job_partyId_fkey" FOREIGN KEY ("partyId") REFERENCES "Party"("id") ON DELETE CASCADE ON UPDATE CASCADE;

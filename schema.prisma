@@ -86,18 +86,7 @@ model StockEntryItem {
   stockItem     StockItem   @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
 }
 
-model Party {
-  id                 Int                @id @default(autoincrement())
-  name               String
-  shortCode          String             @unique
-  partyCompanyName   String
-  phoneNumber        String
-  address            String?
-  reference          String?
-  jobWorkRateDetails JobWorkRateDetails?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-}
+
 
 model JobWorkRateDetails {
   id                          Int     @id @default(autoincrement())
@@ -125,6 +114,65 @@ model JobWorkRateDetails {
   pastingRate                 Float?
   party                       Party   @relation(fields: [partyId], references: [id], onDelete: Cascade)
 }
+
+model Party {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  shortCode          String             @unique
+  partyCompanyName   String
+  phoneNumber        String
+  address            String?
+  reference          String?
+  jobWorkRateDetails JobWorkRateDetails?
+  jobs               Job[]              // Relation to Job model
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model Job {
+  id           Int      @id @default(autoincrement())
+  jobName      String
+  partyId      Int
+  party        Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  jobType      String
+  boardSize    String
+  plateSize    String
+  images       String[]  // Multiple images stored as array
+  color        PrintChargeCategory // Dropdown based on print charge categories
+  dripOff      String?
+  varnish      String?
+  lamination   String?
+  micro        String?
+  punching     String?
+  uv           String?
+  window       String?
+  foil         String?
+  scodix       String?
+  pasting      String?
+  jobStatus    JobStatus @default(INCOMPLETE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+
+enum PrintChargeCategory {
+  printCharge1C1SP
+  printCharge2C
+  printCharge3C1SP
+  printCharge4C
+  printCharge5C
+  printCharge3SP
+  printCharge4SP
+  printCharge2SP
+}
+
+enum JobStatus {
+  INCOMPLETE
+  PENDING
+  ONGOING
+  COMPLETED
+}
+
 
 enum Role {
   SUPER_ADMIN

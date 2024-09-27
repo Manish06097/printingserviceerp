@@ -32,7 +32,11 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Navbar>
+      <h1>Dashboard</h1>
+      <p>User ID: {userInfo.userId}</p>
+      <p>Name: {userInfo.name}</p>
+      <p>Email: {userInfo.email}</p>
+      <p>Role: {userInfo.role}</p>
     </div>
   );
 }
