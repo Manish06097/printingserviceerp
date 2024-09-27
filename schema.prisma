@@ -62,9 +62,9 @@ model StockItem {
   totalQuantity   Int
   totalWeight     Float?
   finalAmount     Float
-  status          StockStatus       @default(ACTIVE) // Moved status here
+  status          StockStatus       @default(ACTIVE)
   stockType       StockType         @relation(fields: [stockTypeId], references: [id])
-  stockEntryItems StockEntryItem[]  // Relation field
+  stockEntryItems StockEntryItem[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -84,9 +84,47 @@ model StockEntryItem {
   stockItemId   Int
   stockEntry    StockEntry  @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
   stockItem     StockItem   @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
-  // Removed status field
 }
 
+model Party {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  shortCode          String             @unique
+  partyCompanyName   String
+  phoneNumber        String
+  address            String?
+  reference          String?
+  jobWorkRateDetails JobWorkRateDetails?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model JobWorkRateDetails {
+  id                          Int     @id @default(autoincrement())
+  partyId                     Int     @unique
+  printCharge1C1SP            Float?
+  printCharge2C               Float?
+  printCharge3C1SP            Float?
+  printCharge4C               Float?
+  printCharge5C               Float?
+  printCharge3SP              Float?
+  printCharge4SP              Float?
+  printCharge2SP              Float?
+  dropOffRate                 Float?
+  varnishRate                 Float?
+  laminationRateSqInch        Float?
+  pateAdd                     Float?
+  pateLess                    Float?
+  minSheetsPerColorChange     Int?
+  microRate                   Float?
+  punchingRate                Float?
+  uvRate                      Float?
+  windowRate                  Float?
+  foilRate                    Float?
+  scodixRate                  Float?
+  pastingRate                 Float?
+  party                       Party   @relation(fields: [partyId], references: [id], onDelete: Cascade)
+}
 
 enum Role {
   SUPER_ADMIN

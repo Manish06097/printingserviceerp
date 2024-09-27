@@ -101,6 +101,50 @@ CREATE TABLE "StockEntryItem" (
     CONSTRAINT "StockEntryItem_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Party" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "shortCode" TEXT NOT NULL,
+    "partyCompanyName" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "address" TEXT,
+    "reference" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Party_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "JobWorkRateDetails" (
+    "id" SERIAL NOT NULL,
+    "partyId" INTEGER NOT NULL,
+    "printCharge1C1SP" DOUBLE PRECISION,
+    "printCharge2C" DOUBLE PRECISION,
+    "printCharge3C1SP" DOUBLE PRECISION,
+    "printCharge4C" DOUBLE PRECISION,
+    "printCharge5C" DOUBLE PRECISION,
+    "printCharge3SP" DOUBLE PRECISION,
+    "printCharge4SP" DOUBLE PRECISION,
+    "printCharge2SP" DOUBLE PRECISION,
+    "dropOffRate" DOUBLE PRECISION,
+    "varnishRate" DOUBLE PRECISION,
+    "laminationRateSqInch" DOUBLE PRECISION,
+    "pateAdd" DOUBLE PRECISION,
+    "pateLess" DOUBLE PRECISION,
+    "minSheetsPerColorChange" INTEGER,
+    "microRate" DOUBLE PRECISION,
+    "punchingRate" DOUBLE PRECISION,
+    "uvRate" DOUBLE PRECISION,
+    "windowRate" DOUBLE PRECISION,
+    "foilRate" DOUBLE PRECISION,
+    "scodixRate" DOUBLE PRECISION,
+    "pastingRate" DOUBLE PRECISION,
+
+    CONSTRAINT "JobWorkRateDetails_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -112,6 +156,12 @@ CREATE UNIQUE INDEX "Employee_userId_key" ON "Employee"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "StockType_name_key" ON "StockType"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Party_shortCode_key" ON "Party"("shortCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "JobWorkRateDetails_partyId_key" ON "JobWorkRateDetails"("partyId");
 
 -- AddForeignKey
 ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -127,3 +177,6 @@ ALTER TABLE "StockEntryItem" ADD CONSTRAINT "StockEntryItem_stockEntryId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "StockEntryItem" ADD CONSTRAINT "StockEntryItem_stockItemId_fkey" FOREIGN KEY ("stockItemId") REFERENCES "StockItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "JobWorkRateDetails" ADD CONSTRAINT "JobWorkRateDetails_partyId_fkey" FOREIGN KEY ("partyId") REFERENCES "Party"("id") ON DELETE CASCADE ON UPDATE CASCADE;
