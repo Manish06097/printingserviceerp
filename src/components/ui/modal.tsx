@@ -7,15 +7,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  name: string
   children: React.ReactNode;
 }
 
-export function Modal({ isOpen, onClose, children }: ModalProps) {
+export function Modal({ isOpen,name, onClose, children }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
+          <DialogTitle>Add {name}</DialogTitle>
         </DialogHeader>
         {children}
       </DialogContent>

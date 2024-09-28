@@ -288,7 +288,7 @@ export default function UsersPage() {
       />
 
       {/* Modal for Adding New User */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)}>
+      <Modal isOpen={isAddModalOpen} name={'User'} onClose={() => setIsAddModalOpen(false)}>
         <form onSubmit={handleAddFormSubmit} className="space-y-4">
           {/* Name Field */}
           <div>
@@ -363,6 +363,7 @@ export default function UsersPage() {
       {selectedUser && (
         <Modal
           isOpen={isEditModalOpen}
+          name={'User'}
           onClose={() => setIsEditModalOpen(false)}
         >
           <form onSubmit={handleEditFormSubmit} className="space-y-4">
