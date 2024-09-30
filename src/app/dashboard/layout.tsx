@@ -78,6 +78,9 @@ function DesktopNav() {
         <NavItem href="/dashboard/employees" label="Employee managment">
           <Package className="h-5 w-5" />
         </NavItem>
+        <NavItem href="/dashboard/stocks" label="Employee managment">
+          <Package className="h-5 w-5" />
+        </NavItem>
       </nav>
       <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
         <Tooltip>

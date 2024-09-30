@@ -1,5 +1,11 @@
 'use client';
-
+import {
+  MoreHorizontalIcon,
+  EditIcon,
+  TrashIcon,
+  PlusIcon,
+  MinusIcon,
+} from "lucide-react";
 import * as React from 'react';
 import {
   ColumnDef,
@@ -22,21 +28,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { CaretSortIcon, ChevronDownIcon } from '@radix-ui/react-icons';
+import { CaretSortIcon } from '@radix-ui/react-icons';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
   data: TData[];
-  onAddItem: () => void; // Callback to handle adding an item (dynamic action)
-  buttonText: string; // Dynamic button text
+
+  // Primary Button Props
+  primaryButtonText: string; // Text for the primary button
+  onPrimaryButton: () => void; // Handler for the primary button click
+
+  // Secondary Button Props (Optional)
+  secondaryButtonText?: string; // Text for the secondary button
+  onSecondaryButton?: () => void; // Handler for the secondary button click
+
   pageSize?: number; // Optional prop to set page size, default to 5
 }
 
 export function DataTable<TData>({
   columns,
   data,
-  onAddItem,
-  buttonText,
+  primaryButtonText,
+  onPrimaryButton,
+  secondaryButtonText,
+  onSecondaryButton,
   pageSize = 5, // Default value set to 5
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -67,7 +82,7 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full">
-      {/* Flex container for Filter and dynamic button */}
+      {/* Flex container for Filter and dynamic buttons */}
       <div className="flex items-center justify-between py-4">
         {/* Input for filtering */}
         <Input
@@ -76,9 +91,27 @@ export function DataTable<TData>({
           onChange={(event) => setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
-        {/* Dynamic Button */}
-        <Button onClick={onAddItem}>{buttonText}</Button>
+
+  
+        
+        {/* Button Container */}
+        <div className="flex justify-end mb-4 space-x-2">
+            {/* Secondary Button (Rendered Only If Props Are Provided) */}
+            {secondaryButtonText && onSecondaryButton && (
+            <Button onClick={onSecondaryButton} variant="secondary">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {secondaryButtonText}
+            </Button>
+          )}
+          {/* Primary Button */}
+          <Button onClick={onPrimaryButton}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+            {primaryButtonText}</Button>
+          
+        
+        </div>
       </div>
+      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -135,6 +168,7 @@ export function DataTable<TData>({
           </TableBody>
         </Table>
       </div>
+      
       {/* Pagination Controls */}
       <div className="flex items-center justify-between py-4">
         <span className="text-sm text-muted-foreground">

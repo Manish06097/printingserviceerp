@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  name: string
+  name?: string
   children: React.ReactNode;
 }
 
@@ -16,7 +16,7 @@ export function Modal({ isOpen,name, onClose, children }: ModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add {name}</DialogTitle>
+        { name && <DialogTitle>Add {name}</DialogTitle> }
         </DialogHeader>
         {children}
       </DialogContent>
