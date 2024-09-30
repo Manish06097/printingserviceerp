@@ -2,13 +2,19 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useMemo } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import {
   MoreHorizontalIcon,
   EditIcon,
@@ -416,53 +422,72 @@ export default function StockEntriesPage() {
   // Submit Edit Stock Entry Form
   const submitEditStockEntry = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedStockEntry) return;
-
+    
+    console.log("Form submission initiated.");
+    
+    console.log("Selected Stock Entry:", selectedStockEntry);
+    console.log("Edit Stock Entry Data:", editStockEntry);
+  
+    if (!selectedStockEntry) {
+      console.error("No selected stock entry found. Aborting submission.");
+      toast.error("No stock entry selected for editing.");
+      return;
+    }
+  
     // Basic form validation
     if (!editStockEntry.partyName.trim() || !editStockEntry.dateReceived) {
+      console.error("Validation failed: Party Name or Date Received is missing.");
       toast.error("Please fill in all required fields.");
       return;
     }
-
+  
     // Validate stock items
     for (let i = 0; i < editStockEntry.stockItems.length; i++) {
       const item = editStockEntry.stockItems[i];
+      console.log(`Validating Stock Item ${i + 1}:`, item);
+  
       if (!item.name.trim()) {
+        console.error(`Validation failed: Stock Item ${i + 1} - Name is required.`);
         toast.error(`Stock Item ${i + 1}: Name is required.`);
         return;
       }
       if (!item.stockTypeId) {
+        console.error(`Validation failed: Stock Item ${i + 1} - Stock Type is required.`);
         toast.error(`Stock Item ${i + 1}: Stock Type is required.`);
         return;
       }
       if (item.quantityType === "KG" || item.quantityType === "LITER") {
         if (!item.totalWeight || item.totalWeight <= 0) {
-          toast.error(
-            `Stock Item ${i + 1}: Total Weight must be a positive number.`
-          );
+          console.error(`Validation failed: Stock Item ${i + 1} - Total Weight must be a positive number.`);
+          toast.error(`Stock Item ${i + 1}: Total Weight must be a positive number.`);
           return;
         }
       }
       if (item.finalAmount < 0) {
+        console.error(`Validation failed: Stock Item ${i + 1} - Final Amount cannot be negative.`);
         toast.error(`Stock Item ${i + 1}: Final Amount cannot be negative.`);
         return;
       }
       if (item.image && !isValidURL(item.image)) {
-        toast.error(
-          `Stock Item ${i + 1}: Please provide a valid image URL.`
-        );
-        return;
+        console.error(`Validation failed: Stock Item ${i + 1} - Invalid Image URL.`);
+        toast.error(`Stock Item ${i + 1}: Please provide a valid image URL.`);
+        
       }
     }
-
+  
     try {
+      console.log("Starting to update/create stock items...");
+      
       // First, update all stock items
       const updatedStockItemIds: number[] = [];
-      for (const item of editStockEntry.stockItems) {
+      for (const [index, item] of editStockEntry.stockItems.entries()) {
+        console.log(`Processing Stock Item ${index + 1}:`, item);
+        
+        let response;
         if (item.id && item.id !== 0) {
+          console.log(`Updating existing Stock Item ID: ${item.id}`);
           // Existing stock item, update it
-          const res = await fetch(`/api/stock/items/${item.id}`, {
+          response = await fetch(`/api/stock/items/${item.id}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -479,17 +504,10 @@ export default function StockEntriesPage() {
               status: item.status,
             }),
           });
-
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || "Failed to update stock item.");
-          }
-
-          const updatedItem: StockItemDetails = await res.json();
-          updatedStockItemIds.push(updatedItem.id);
         } else {
+          console.log(`Creating new Stock Item.`);
           // New stock item, create it
-          const res = await fetch("/api/stock/items", {
+          response = await fetch("/api/stock/items", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -506,17 +524,23 @@ export default function StockEntriesPage() {
               status: item.status,
             }),
           });
-
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || "Failed to create stock item.");
-          }
-
-          const createdItem: StockItemDetails = await res.json();
-          updatedStockItemIds.push(createdItem.id);
         }
+  
+        console.log(`Fetch response status for Stock Item ${index + 1}:`, response.status);
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`Error processing Stock Item ${index + 1}:`, errorData);
+          throw new Error(errorData.error || "Failed to process stock item.");
+        }
+  
+        const processedItem: StockItemDetails = await response.json();
+        console.log(`Successfully processed Stock Item ${index + 1}:`, processedItem);
+        updatedStockItemIds.push(processedItem.id);
       }
-
+  
+      console.log("All stock items processed successfully. Proceeding to update the stock entry.");
+  
       // Then, update the stock entry
       const stockEntryRes = await fetch(
         `/api/stock/entries/${selectedStockEntry.id}`,
@@ -532,26 +556,39 @@ export default function StockEntriesPage() {
           }),
         }
       );
-
+  
+      console.log(`Fetch response status for Stock Entry update:`, stockEntryRes.status);
+  
       if (!stockEntryRes.ok) {
         const errorData = await stockEntryRes.json();
+        console.error("Error updating stock entry:", errorData);
         throw new Error(errorData.error || "Failed to update stock entry.");
       }
-
+  
       const updatedEntry: StockEntry = await stockEntryRes.json();
+      console.log("Stock entry updated successfully:", updatedEntry);
+  
+      // Update the local state with the updated entry
       setStockEntries(
         stockEntries.map((entry) =>
           entry.id === updatedEntry.id ? updatedEntry : entry
         )
       );
+  
+      console.log("Local stock entries state updated.");
+  
+      // Close the edit modal
       setIsEditModalOpen(false);
+      console.log("Edit modal closed.");
+  
+      // Notify the user of success
       toast.success("Stock entry updated successfully!");
     } catch (error: any) {
-      console.error("Error updating stock entry:", error);
-      toast.error(error.message);
+      console.error("Error during stock entry update process:", error);
+      toast.error(error.message || "An unexpected error occurred.");
     }
   };
-
+  
   // Add New Stock Item Field (Add Modal)
   const addNewStockItemField = () => {
     setNewStockEntry((prev) => ({
@@ -689,93 +726,129 @@ export default function StockEntriesPage() {
   // Submit Edit Stock Item Form
   const submitEditStockItem = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!stockItemToEdit) return;
-
+    console.log("submitEditStockItem called");
+  
+    if (!stockItemToEdit) {
+      console.error("No stockItemToEdit found. Exiting function.");
+      return;
+    }
+  
+    console.log("stockItemToEdit:", stockItemToEdit);
+  
     // Basic form validation
     if (!stockItemToEdit.name.trim()) {
+      console.error("Validation failed: Stock Item Name is empty.");
       toast.error("Stock Item Name is required.");
       return;
     }
+    console.log("Validation passed: Stock Item Name is present.");
+  
     if (!stockItemToEdit.stockTypeId) {
+      console.error("Validation failed: Stock Type ID is missing.");
       toast.error("Stock Type is required.");
       return;
     }
+    console.log("Validation passed: Stock Type ID is present.");
+  
     if (
       stockItemToEdit.quantityType === "KG" ||
       stockItemToEdit.quantityType === "LITER"
     ) {
+      console.log(
+        `Quantity Type is ${stockItemToEdit.quantityType}, checking totalWeight.`
+      );
       if (!stockItemToEdit.totalWeight || stockItemToEdit.totalWeight <= 0) {
+        console.error("Validation failed: Total Weight is invalid.");
         toast.error("Total Weight must be a positive number.");
         return;
       }
+      console.log("Validation passed: Total Weight is valid.");
     }
+  
     if (stockItemToEdit.finalAmount < 0) {
+      console.error("Validation failed: Final Amount is negative.");
       toast.error("Final Amount cannot be negative.");
       return;
     }
+    console.log("Validation passed: Final Amount is non-negative.");
+  
     if (stockItemToEdit.image && !isValidURL(stockItemToEdit.image)) {
+      console.error("Validation failed: Image URL is invalid.");
       toast.error("Please provide a valid image URL.");
-      return;
+      // return;
     }
-
+    console.log("Validation passed: Image URL is valid or not provided.");
+  
     try {
+      const requestBody = {
+        name: stockItemToEdit.name,
+        image: stockItemToEdit.image || "",
+        stockTypeId: stockItemToEdit.stockTypeId,
+        quantityType: stockItemToEdit.quantityType,
+        totalQuantity: stockItemToEdit.totalQuantity,
+        totalWeight:
+          stockItemToEdit.quantityType === "PACKET"
+            ? null
+            : stockItemToEdit.totalWeight,
+        finalAmount: stockItemToEdit.finalAmount,
+        status: stockItemToEdit.status,
+      };
+  
+      console.log("Sending PUT request to /api/stock/items/", stockItemToEdit.id);
+      console.log("Request body:", requestBody);
+  
       const res = await fetch(`/api/stock/items/${stockItemToEdit.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: stockItemToEdit.name,
-          image: stockItemToEdit.image || "",
-          stockTypeId: stockItemToEdit.stockTypeId,
-          quantityType: stockItemToEdit.quantityType,
-          totalQuantity: stockItemToEdit.totalQuantity,
-          totalWeight:
-            stockItemToEdit.quantityType === "PACKET"
-              ? null
-              : stockItemToEdit.totalWeight,
-          finalAmount: stockItemToEdit.finalAmount,
-          status: stockItemToEdit.status,
-        }),
+        body: JSON.stringify(requestBody),
       });
-
+  
+      console.log("Received response:", res);
+  
       if (!res.ok) {
         const errorData = await res.json();
+        console.error("API response not OK:", errorData);
         throw new Error(errorData.error || "Failed to update stock item.");
       }
-
+  
       const updatedItem: StockItemDetails = await res.json();
-
+      console.log("Updated stock item received from API:", updatedItem);
+  
       // Update the selectedStockItems state
-      setSelectedStockItems((prevItems) =>
-        prevItems.map((item) =>
+      setSelectedStockItems((prevItems) => {
+        const updatedSelectedItems = prevItems.map((item) =>
           item.id === updatedItem.id ? updatedItem : item
-        )
-      );
-
+        );
+        console.log("Updated selectedStockItems:", updatedSelectedItems);
+        return updatedSelectedItems;
+      });
+  
       // Also update the main stockEntries state
-      setStockEntries((prevEntries) =>
-        prevEntries.map((entry) => {
-          return {
-            ...entry,
-            stockItems: entry.stockItems.map((si) =>
-              si.stockItemId === updatedItem.id
-                ? { ...si, stockItem: updatedItem }
-                : si
-            ),
-          };
-        })
-      );
-
+      setStockEntries((prevEntries) => {
+        const updatedStockEntries = prevEntries.map((entry) => {
+          const updatedStockItems = entry.stockItems.map((si) =>
+            si.stockItemId === updatedItem.id
+              ? { ...si, stockItem: updatedItem }
+              : si
+          );
+          return { ...entry, stockItems: updatedStockItems };
+        });
+        console.log("Updated stockEntries:", updatedStockEntries);
+        return updatedStockEntries;
+      });
+  
       toast.success("Stock item updated successfully!");
+      console.log("Stock item updated successfully, closing modal.");
       setIsEditStockItemModalOpen(false);
       setStockItemToEdit(null);
     } catch (error: any) {
       console.error("Error updating stock item:", error);
-      toast.error(error.message);
+      toast.error(error.message || "An unexpected error occurred.");
     }
   };
+  
 
   // Open Add Stock Type Modal
   const handleAddStockType = () => {
@@ -904,11 +977,21 @@ export default function StockEntriesPage() {
     },
   ];
 
+  const activeItems = useMemo(
+    () => selectedStockItems.filter(item => item.status === "ACTIVE"),
+    [selectedStockItems]
+  );
+
+  const consumedItems = useMemo(
+    () => selectedStockItems.filter(item => item.status === "CONSUMED"),
+    [selectedStockItems]
+  );
   // ----------------------------
   // JSX Rendering
   // ----------------------------
 
   return (
+
     <div className="p-4">
       <h1 className="text-2xl font-semibold mb-4">Stock Entries Management</h1>
       {(stockEntriesError || stockTypesError) && (
@@ -931,77 +1014,187 @@ export default function StockEntriesPage() {
       />
 
       {/* Modal for Viewing Stock Items */}
-      <Modal
-  isOpen={isStockItemsModalOpen}
-  onClose={() => setIsStockItemsModalOpen(false)}
->
-  <div className="max-h-[80vh] overflow-y-auto p-4">
-    <h2 className="text-2xl font-bold text-gray-800 mb-6">Stock Items Details</h2>
-    {selectedStockItems.length > 0 ? (
-      <div className="space-y-6">
-        {selectedStockItems.map((item) => (
-          <div
-            key={item.id}
-            className="border border-gray-300 p-6 rounded-md flex items-center shadow-md"
-          >
-            {/* Validate the image URL before rendering the Image component */}
-            {item.image && isValidURL(item.image) ? (
-              <Image
-                src={item.image}
-                alt={item.name}
-                width={60}
-                height={60}
-                className="mr-4 object-cover rounded-full border border-gray-300"
-              />
-            ) : null /* Don't render anything if the URL is not valid */}
-
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-700">{item.name}</h3>
-              <p className="text-sm text-gray-600">
-                Quantity Type: {item.quantityType}
-              </p>
-              <p className="text-sm text-gray-600">
-                Total Quantity: {item.totalQuantity}
-              </p>
-              {item.quantityType !== "PACKET" && (
-                <p className="text-sm text-gray-600">
-                  Total Weight: {item.totalWeight}
-                </p>
+      
+    <Modal
+      isOpen={isStockItemsModalOpen}
+      onClose={() => setIsStockItemsModalOpen(false)}
+      aria-labelledby="stock-items-title" // Enhances accessibility
+    >
+      {/* Modal Container with Fixed Height and Flex Layout */}
+      <div className="h-[80vh] w-full max-w-3xl mx-auto bg-white rounded-lg shadow-lg flex flex-col p-4">
+        
+        {/* Modal Header */}
+        <div className="mb-6">
+          <h2 id="stock-items-title" className="text-2xl font-bold text-gray-800">
+            Stock Items Details
+          </h2>
+        </div>
+        
+        {/* Tabs Section */}
+        {selectedStockItems.length > 0 ? (
+          <Tabs defaultValue="active" className="flex-1 flex flex-col">
+            
+            {/* Tabs List */}
+            <TabsList className="mb-4 flex space-x-4 border-b">
+              <TabsTrigger value="active" className="text-lg">
+                Active ({activeItems.length})
+              </TabsTrigger>
+              <TabsTrigger value="consumed" className="text-lg">
+                Consumed ({consumedItems.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Active Stock Items */}
+            <TabsContent value="active" className="flex-1 overflow-y-auto">
+              {activeItems.length > 0 ? (
+                <div className="space-y-6">
+                  {activeItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border border-gray-300 p-6 rounded-md flex items-center shadow-md"
+                    >
+                      {/* Validate the image URL before rendering the Image component */}
+                      {item.image && isValidURL(item.image) ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={60}
+                          height={60}
+                          className="mr-4 object-cover rounded-full border border-gray-300"
+                        />
+                      ) : (
+                        // Placeholder for invalid or missing image URLs
+                        <div className="w-15 h-15 mr-4 bg-gray-200 flex items-center justify-center rounded-full border border-gray-300">
+                          No Image
+                        </div>
+                      )}
+  
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-700">{item.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Quantity Type: {item.quantityType}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Total Quantity: {item.totalQuantity}
+                        </p>
+                        {item.quantityType !== "PACKET" && (
+                          <p className="text-sm text-gray-600">
+                            Total Weight: {item.totalWeight}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-600">
+                          Final Amount: ${item.finalAmount.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-gray-600">Status: {item.status}</p>
+                      </div>
+  
+                      {/* Edit and Delete Buttons */}
+                      <div className="flex flex-col space-y-2 items-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStockItem(item)}
+                          className="flex items-center"
+                        >
+                          <EditIcon className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        {/* <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 flex items-center"
+                          onClick={() => handleDeleteStockItem(item.id)}
+                        >
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button> */}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-center mt-4">No Active Stock Items Available.</p>
               )}
-              <p className="text-sm text-gray-600">
-                Final Amount: ${item.finalAmount.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600">Status: {item.status}</p>
-            </div>
-            <div className="flex flex-col space-y-2 items-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditStockItem(item)}
-                className="flex items-center mr-4"
-              >
-                <EditIcon className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-500 flex items-center"
-                onClick={() => handleDeleteStockItem(item.id)}
-              >
-                <TrashIcon className="h-4 w-4 mr-1" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        ))}
+            </TabsContent>
+    
+            {/* Consumed Stock Items */}
+            <TabsContent value="consumed" className="flex-1 overflow-y-auto">
+              {consumedItems.length > 0 ? (
+                <div className="space-y-6">
+                  {consumedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="border border-gray-300 p-6 rounded-md flex items-center shadow-md"
+                    >
+                      {/* Validate the image URL before rendering the Image component */}
+                      {item.image && isValidURL(item.image) ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={60}
+                          height={60}
+                          className="mr-4 object-cover rounded-full border border-gray-300"
+                        />
+                      ) : (
+                        // Placeholder for invalid or missing image URLs
+                        <div className="w-15 h-15 mr-4 bg-gray-200 flex items-center justify-center rounded-full border border-gray-300">
+                          No Image
+                        </div>
+                      )}
+  
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-700">{item.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Quantity Type: {item.quantityType}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Total Quantity: {item.totalQuantity}
+                        </p>
+                        {item.quantityType !== "PACKET" && (
+                          <p className="text-sm text-gray-600">
+                            Total Weight: {item.totalWeight}
+                          </p>
+                        )}
+                        <p className="text-sm text-gray-600">
+                          Final Amount: ${item.finalAmount.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-gray-600">Status: {item.status}</p>
+                      </div>
+  
+                      {/* Edit and Delete Buttons */}
+                      <div className="flex flex-col space-y-2 items-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStockItem(item)}
+                          className="flex items-center mr-3"
+                        >
+                          <EditIcon className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 flex items-center"
+                          onClick={() => handleDeleteStockItem(item.id)}
+                        >
+                          <TrashIcon className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-center mt-4">No Consumed Stock Items Available.</p>
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <p className="text-gray-600 text-center mt-4">No Stock Items Available.</p>
+        )}
       </div>
-    ) : (
-      <p className="text-gray-600 text-center mt-4">No Stock Items Available.</p>
-    )}
-  </div>
-</Modal>
-
+    </Modal>
 
       {/* Modal for Editing a Specific Stock Item */}
       <Modal
@@ -2056,6 +2249,10 @@ export default function StockEntriesPage() {
           )}
         </div>
       </Modal>
+    
     </div>
+
+        
   );
+ 
 }
