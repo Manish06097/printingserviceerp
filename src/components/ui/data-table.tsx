@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CaretSortIcon } from '@radix-ui/react-icons';
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
@@ -107,8 +108,19 @@ export function DataTable<TData>({
           <Button onClick={onPrimaryButton}>
           <PlusIcon className="h-4 w-4 mr-2" />
             {primaryButtonText}</Button>
-          
-        
+
+
+        {secondaryButtonText && onSecondaryButton && (
+            <div className="flex items-center space-x-2">
+          <Checkbox id="terms" />
+      <label
+        htmlFor="terms"
+        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        Active
+      </label>
+    </div>
+            )}
         </div>
       </div>
       

@@ -49,6 +49,7 @@ export default function UsersPage() {
     setLoading(true);
     setError(null);
     try {
+      console.log("Fetching users...");
       const res = await fetch("/api/admin/users", {
         method: "GET",
       });
@@ -58,19 +59,23 @@ export default function UsersPage() {
       }
 
       const data = await res.json();
+      console.log("Fetched users:", data);
       setUsers(data);
     } catch (error: any) {
       setError(error.message);
+      console.error("Error fetching users:", error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddUser = () => {
+    console.log("Opening Add User modal");
     setIsAddModalOpen(true);
   };
 
   const handleEditUser = (user: User) => {
+    console.log("Editing user:", user);
     setSelectedUser(user);
     setEditUser({
       name: user.name,
@@ -81,6 +86,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (user: User) => {
+    console.log("Attempting to delete user:", user);
     if (!confirm(`Are you sure you want to delete user "${user.name}"?`)) {
       return;
     }
@@ -95,10 +101,11 @@ export default function UsersPage() {
         throw new Error(errorData.error || "Failed to delete user.");
       }
 
+      console.log("User deleted successfully:", user.id);
       setUsers(users.filter((u) => u.id !== user.id));
       toast.success("User deleted successfully!");
     } catch (error: any) {
-      console.error("Error deleting user:", error);
+      console.error("Error deleting user:", error.message);
       toast.error(error.message);
     }
   };
@@ -109,9 +116,11 @@ export default function UsersPage() {
     // Basic form validation
     if (!newUser.name || !newUser.email || !newUser.password) {
       setError("Please fill in all required fields.");
+      console.error("Form validation failed: missing fields");
       return;
     }
 
+    console.log("Adding new user:", newUser);
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
@@ -132,6 +141,7 @@ export default function UsersPage() {
       }
 
       const addedUser: User = await res.json();
+      console.log("User added successfully:", addedUser);
       setUsers([...users, addedUser]);
       setIsAddModalOpen(false); // Close the modal after successful submission
 
@@ -146,7 +156,7 @@ export default function UsersPage() {
       setError(null); // Clear any existing errors
       toast.success("User added successfully!");
     } catch (error: any) {
-      console.error("Error adding user:", error);
+      console.error("Error adding user:", error.message);
       setError(error.message);
       toast.error(error.message);
     }
@@ -160,9 +170,11 @@ export default function UsersPage() {
     // Basic form validation
     if (!editUser.name || !editUser.email) {
       setError("Please fill in all required fields.");
+      console.error("Form validation failed: missing fields");
       return;
     }
 
+    console.log("Updating user:", editUser);
     try {
       const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
         method: "PUT",
@@ -182,6 +194,7 @@ export default function UsersPage() {
       }
 
       const updatedUser: User = await res.json();
+      console.log("User updated successfully:", updatedUser);
       setUsers(
         users.map((u) => (u.id === updatedUser.id ? updatedUser : u))
       );
@@ -190,7 +203,7 @@ export default function UsersPage() {
       setError(null); // Clear any existing errors
       toast.success("User updated successfully!");
     } catch (error: any) {
-      console.error("Error updating user:", error);
+      console.error("Error updating user:", error.message);
       setError(error.message);
       toast.error(error.message);
     }
@@ -248,6 +261,8 @@ export default function UsersPage() {
                 className="flex items-center p-2 hover:bg-gray-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSuperAdmin}
                 onSelect={() => {
+                  console.log(isSuperAdmin)
+
                   if (!isSuperAdmin) handleEditUser(user);
                 }}
               >
@@ -282,8 +297,9 @@ export default function UsersPage() {
       <DataTable
         columns={columns}
         data={users}
-        onAddItem={handleAddUser}
-        buttonText="Add User" // Dynamic button text
+        onPrimaryButton={handleAddUser}
+        primaryButtonText="Add User"
+         // Dynamic button text
         pageSize={10} // Limit to 5 users per page
       />
 
@@ -318,6 +334,7 @@ export default function UsersPage() {
               }
               required
             />
+            {error && <div className="text-red-500 mb-4">{error}</div>}
           </div>
 
           {/* Password Field */}
@@ -349,7 +366,7 @@ export default function UsersPage() {
               required
             >
               <option value="ADMIN">ADMIN</option>
-              <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+              {/* <option value="SUPER_ADMIN">SUPER_ADMIN</option> */}
               <option value="STAFF">STAFF</option>
             </select>
           </div>
@@ -375,6 +392,7 @@ export default function UsersPage() {
               <Input
                 type="text"
                 value={editUser.name}
+                
                 onChange={(e) =>
                   setEditUser({ ...editUser, name: e.target.value })
                 }
@@ -395,6 +413,7 @@ export default function UsersPage() {
                 }
                 required
               />
+              {error && <div className="text-red-500 mb-4">{error}</div>}
             </div>
 
             {/* Role Selection */}
@@ -411,7 +430,7 @@ export default function UsersPage() {
                 required
               >
                 <option value="ADMIN">ADMIN</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                {/* <option value="SUPER_ADMIN">SUPER_ADMIN</option> */}
                 <option value="STAFF">STAFF</option>
               </select>
             </div>

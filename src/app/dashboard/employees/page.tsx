@@ -521,7 +521,7 @@ export default function EmployeeManagementPage() {
     {
       accessorKey: "salary",
       header: "Salary",
-      cell: ({ row }) => `$${row.getValue("salary").toLocaleString()}`,
+      cell: ({ row }) => `${row.getValue("salary").toLocaleString()} Rs`,
     },
     {
       accessorKey: "status",
@@ -642,8 +642,9 @@ export default function EmployeeManagementPage() {
           <DataTable
             columns={employeeColumns}
             data={employees}
-            onAddItem={handleAddEmployee}
-            buttonText="Add Employee"
+            
+            onPrimaryButton={handleAddEmployee}
+            primaryButtonText="Add Employee"
             pageSize={10} // Limit to 10 employees per page
           />
 
@@ -680,6 +681,7 @@ export default function EmployeeManagementPage() {
                   }
                   required
                 />
+                {error && <div className="text-red-500 mb-4">{error}</div>}
               </div>
 
               {/* Start Date Field */}
@@ -749,7 +751,7 @@ export default function EmployeeManagementPage() {
                 >
                   <option value="STAFF">STAFF</option>
                   <option value="ADMIN">ADMIN</option>
-                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                  {/* <option value="SUPER_ADMIN">SUPER_ADMIN</option> */}
                 </select>
               </div>
 
@@ -929,8 +931,9 @@ export default function EmployeeManagementPage() {
             <DataTable
               columns={attendanceColumns}
               data={attendanceRecords}
-              onAddItem={handleAddAttendance}
-              buttonText="Add Attendance"
+              onPrimaryButton={handleAddAttendance}
+             
+              primaryButtonText="Add Attendance"
               pageSize={10} // Limit to 10 records per page
             />
           ) : (

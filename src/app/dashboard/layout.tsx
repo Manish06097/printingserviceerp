@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useState, useEffect } from "react";
 import {
   Home,
   LineChart,
@@ -57,6 +58,24 @@ export default function DashboardLayout({
 }
 
 function DesktopNav() {
+  useEffect(() => {
+  // Check if we're in the browser
+  if (typeof window !== 'undefined') {
+    const getCookieValue = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+      return '';
+    };
+
+    const userId = getCookieValue('userId');
+    const name = getCookieValue('name');
+    const email = getCookieValue('email');
+    const role = getCookieValue('role');
+
+    setUserInfo({ userId, name, email, role });
+  }
+}, []);
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">

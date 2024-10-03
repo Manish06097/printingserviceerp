@@ -10,7 +10,10 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: 'https://priyanshart.com', // Your live domain
+      },
+      {
+        url: 'https://www.priyanshart.com', // Your live www subdomain
       },
     ],
     components: {

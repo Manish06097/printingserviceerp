@@ -322,26 +322,34 @@ export default function StockEntriesPage() {
   // Submit Add Stock Entry Form
   const submitAddStockEntry = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log('Form submission started');
+  
     // Basic form validation
     if (!newStockEntry.partyName.trim() || !newStockEntry.dateReceived) {
+      console.log('Form validation failed: missing party name or date received');
       toast.error("Please fill in all required fields.");
       return;
     }
-
+    console.log('Form validation passed');
+  
     // Validate stock items
     for (let i = 0; i < newStockEntry.stockItems.length; i++) {
       const item = newStockEntry.stockItems[i];
+      console.log(`Validating stock item ${i + 1}:`, item);
+  
       if (!item.name.trim()) {
+        console.log(`Stock Item ${i + 1}: Name is missing`);
         toast.error(`Stock Item ${i + 1}: Name is required.`);
         return;
       }
       if (!item.stockTypeId) {
+        console.log(`Stock Item ${i + 1}: Stock Type is missing`);
         toast.error(`Stock Item ${i + 1}: Stock Type is required.`);
         return;
       }
       if (item.quantityType === "KG" || item.quantityType === "LITER") {
         if (!item.totalWeight || item.totalWeight <= 0) {
+          console.log(`Stock Item ${i + 1}: Invalid total weight`);
           toast.error(
             `Stock Item ${i + 1}: Total Weight must be a positive number.`
           );
@@ -349,21 +357,26 @@ export default function StockEntriesPage() {
         }
       }
       if (item.finalAmount < 0) {
+        console.log(`Stock Item ${i + 1}: Negative final amount`);
         toast.error(`Stock Item ${i + 1}: Final Amount cannot be negative.`);
         return;
       }
       if (item.image && !isValidURL(item.image)) {
+        console.log(`Stock Item ${i + 1}: Invalid image URL`);
         toast.error(
           `Stock Item ${i + 1}: Please provide a valid image URL.`
         );
-        return;
+        
       }
     }
-
+    console.log('Stock items validation passed');
+  
     try {
       // First, create all stock items
       const stockItemIds: number[] = [];
+      console.log('Starting to create stock items...');
       for (const item of newStockEntry.stockItems) {
+        console.log('Creating stock item:', item.name);
         const res = await fetch("/api/stock/items", {
           method: "POST",
           headers: {
@@ -375,22 +388,25 @@ export default function StockEntriesPage() {
             stockTypeId: item.stockTypeId,
             quantityType: item.quantityType,
             totalQuantity: item.totalQuantity,
-            totalWeight:
-              item.quantityType === "PACKET" ? null : item.totalWeight,
+            totalWeight: item.quantityType === "PACKET" ? null : item.totalWeight,
             finalAmount: item.finalAmount,
             status: item.status,
           }),
         });
-
+  
         if (!res.ok) {
           const errorData = await res.json();
+          console.log(`Error creating stock item ${item.name}:`, errorData.error);
           throw new Error(errorData.error || "Failed to create stock item.");
         }
-
+  
         const createdItem: StockItemDetails = await res.json();
+        console.log('Stock item created:', createdItem);
         stockItemIds.push(createdItem.id);
       }
-
+  
+      console.log('All stock items created, proceeding to create stock entry');
+  
       // Then, create the stock entry
       const stockEntryRes = await fetch("/api/stock/entries", {
         method: "POST",
@@ -403,21 +419,24 @@ export default function StockEntriesPage() {
           stockItemIds: stockItemIds,
         }),
       });
-
+  
       if (!stockEntryRes.ok) {
         const errorData = await stockEntryRes.json();
+        console.log('Error creating stock entry:', errorData.error);
         throw new Error(errorData.error || "Failed to create stock entry.");
       }
-
+  
       const createdEntry: StockEntry = await stockEntryRes.json();
+      console.log('Stock entry created:', createdEntry);
       setStockEntries([...stockEntries, createdEntry]);
       setIsAddModalOpen(false);
       toast.success("Stock entry created successfully!");
     } catch (error: any) {
-      console.error("Error creating stock entry:", error);
+      console.error("Error creating stock entry:", error.message);
       toast.error(error.message);
     }
   };
+  
 
   // Submit Edit Stock Entry Form
   const submitEditStockEntry = async (e: React.FormEvent) => {

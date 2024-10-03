@@ -236,19 +236,54 @@ export async function GET(
  *       500:
  *         description: Internal server error.
  */
+// src/app/api/admin/users/[id]/route.ts
+
+
+
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const userId = Number(params.id);
+
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user ID.' },
+        { status: 400 }
+      );
+    }
+
     const data = await request.json();
+
+    // Basic Validation: Ensure that at least one updatable field is present
+    if (!data.name && !data.email && !data.role) {
+      return NextResponse.json(
+        { error: 'At least one field (name, email, or role) must be provided for update.' },
+        { status: 400 }
+      );
+    }
 
     // Prevent updating the password directly
     if ('password' in data) {
       delete data.password;
     }
 
+    // If email is being updated, check for uniqueness
+    if (data.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+
+      if (existingUser && existingUser.id !== userId) {
+        return NextResponse.json(
+          { error: 'Email already in use.', field: 'email' }, // Add a field key to specify which field caused the error
+          { status: 400 }
+        );
+      }
+    }
+
+    // Proceed to update the user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data,
@@ -263,11 +298,25 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedUser, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update User Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+
+    // Handle Prisma unique constraint error
+    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+      return NextResponse.json(
+        { error: 'Email already in use.', field: 'email' }, // Add the 'field' key to clarify the error's context
+        { status: 400 }
+      );
+    }
+
+    // Handle other Prisma errors or unexpected issues
+    return NextResponse.json(
+      { error: 'Internal Server Error.' },
+      { status: 500 }
+    );
   }
 }
+
 
 /**
  * @swagger
