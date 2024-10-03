@@ -623,7 +623,9 @@ export default function EmployeeManagementPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">Employee Management</h1>
+       <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-gray-300 pb-2 shadow-sm">
+Employees Management
+</h1>
       {(error || attendanceError) && (
         <div className="text-red-500 mb-4">
           Error: {error || attendanceError}
@@ -895,7 +897,7 @@ export default function EmployeeManagementPage() {
 
         {/* Attendance Tab Content */}
         <TabsContent value="attendance">
-          <h2 className="text-xl font-semibold mb-4">Attendance Management</h2>
+          
 
           {/* Employee Selection with react-select */}
           <div className="mb-4">

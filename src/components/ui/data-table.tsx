@@ -105,22 +105,14 @@ export function DataTable<TData>({
             </Button>
           )}
           {/* Primary Button */}
+          {primaryButtonText && onPrimaryButton && (
           <Button onClick={onPrimaryButton}>
           <PlusIcon className="h-4 w-4 mr-2" />
             {primaryButtonText}</Button>
+          )}
 
 
-        {secondaryButtonText && onSecondaryButton && (
-            <div className="flex items-center space-x-2">
-          <Checkbox id="terms" />
-      <label
-        htmlFor="terms"
-        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-      >
-        Active
-      </label>
-    </div>
-            )}
+        
         </div>
       </div>
       
@@ -182,7 +174,7 @@ export function DataTable<TData>({
       </div>
       
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between py-4">
+      <div className="flex items-center justify-between py-4 mt-12">
         <span className="text-sm text-muted-foreground">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>

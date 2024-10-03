@@ -2,45 +2,38 @@
 
 "use client";
 import React from "react";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb"; // Adjust the import path
-import { breadcrumbNameMap } from "@/lib/breadcrumbs"; // Ensure this is imported
+import { ChevronRightIcon, HomeIcon } from "@heroicons/react/24/solid"; // Ensure correct Heroicons v2 import
+
+// Assuming you have a breadcrumbNameMap that maps route segments to display names
+import { breadcrumbNameMap } from "@/lib/breadcrumbs"; 
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter((segment) => segment !== "");
 
-  const formatSegment = (segment: string) => {
-    // If the segment is a dynamic ID, fetch the corresponding name
-    // For simplicity, let's assume dynamic segments are IDs and fetch their names
-    // You might need to implement a context or a state to hold names of dynamic segments
+  // Remove 'dashboard' from pathSegments to prevent duplication
+  const filteredPathSegments = pathSegments[0] === "dashboard" ? pathSegments.slice(1) : pathSegments;
 
-    // Example: If segment matches an ID pattern, return "User Details" or similar
+  const formatSegment = (segment: string) => {
     const idPattern = /^[0-9a-fA-F]{24}$/; // Example pattern for MongoDB ObjectIDs
 
     if (idPattern.test(segment)) {
-      // You can customize this based on your application's needs
-      return "Details"; // Or fetch and return the actual name associated with the ID
+      return "Details";
     }
 
-    return breadcrumbNameMap[segment] || segment
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return (
+      breadcrumbNameMap[segment] ||
+      segment
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+    );
   };
 
-  const breadcrumbs = pathSegments.map((segment, index) => {
-    const href = "/" + pathSegments.slice(0, index + 1).join("/");
-
-    const isLast = index === pathSegments.length - 1;
+  const breadcrumbs = filteredPathSegments.map((segment, index) => {
+    const href = "/dashboard/" + filteredPathSegments.slice(0, index + 1).join("/");
+    const isLast = index === filteredPathSegments.length - 1;
 
     return {
       label: formatSegment(segment),
@@ -50,30 +43,33 @@ function DashboardBreadcrumb() {
   });
 
   return (
-    <Breadcrumb className="hidden md:flex">
-      <BreadcrumbList>
-        {/* Always include the Dashboard link as the first breadcrumb */}
-        {/* <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href="/dashboard">Dashboard</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem> */}
+    <nav
+      aria-label="breadcrumb"
+      className="bg-white py-3 px-5 rounded-lg shadow-md hidden md:flex"
+    >
+      <ol className="flex items-center space-x-2">
+        {/* Dashboard Home */}
+        <li className="flex items-center">
+          <Link href="/dashboard" className="text-black hover:text-gray-700 flex items-center">
+            <HomeIcon className="w-5 h-5 mr-1" />
+            Dashboard
+          </Link>
+        </li>
+
         {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={index}>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              {crumb.isCurrentPage ? (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={crumb.href}>{crumb.label}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-          </React.Fragment>
+          <li key={index} className="flex items-center">
+            <ChevronRightIcon className="w-5 h-5 text-black mx-2" />
+            {crumb.isCurrentPage ? (
+              <span className="text-black font-semibold">{crumb.label}</span>
+            ) : (
+              <Link href={crumb.href} className="text-black hover:text-gray-700">
+                {crumb.label}
+              </Link>
+            )}
+          </li>
         ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+      </ol>
+    </nav>
   );
 }
 

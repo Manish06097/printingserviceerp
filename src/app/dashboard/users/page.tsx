@@ -292,7 +292,10 @@ export default function UsersPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">User Management</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-gray-300 pb-2 shadow-sm">
+  User Management
+</h1>
+
       {error && <div className="text-red-500 mb-4">Error: {error}</div>}
       <DataTable
         columns={columns}
