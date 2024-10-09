@@ -38,7 +38,7 @@ interface StockItemDetails {
   name: string;
   image?: string;
   stockTypeId: number;
-  quantityType: "PACKET" | "KG" | "LITER";
+  quantityType: "PACKET" | "GROSS" | "WEIGHT";
   totalQuantity: number;
   totalWeight?: number;
   finalAmount: number;
@@ -69,17 +69,31 @@ interface OptionType {
 }
 
 export default function StockEntriesPage() {
+  const [userInfo, setUserInfo] = useState({
+    userId: "",
+    name: "",
+    email: "",
+    role: "ADMIN", // Default role
+  });
+  useEffect(() => {
+    const getCookieValue = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+      return '';
+    };
 
-  const searchParams = useSearchParams();
-  const router = useRouter();
+    
 
+    // Fetch cookies in the client
+    const userId = getCookieValue('userId');
+    const name = getCookieValue('name');
+    const email = getCookieValue('email');
+    const role = getCookieValue('role');
 
-
-  const roleParam = searchParams.get('role');
-  const role = roleParam ; // Default to 'guest' if 'role' is undefined
-
-
-  console.log(role);
+    // Set the userInfo state based on the cookie values
+    setUserInfo({ userId, name, email, role });
+  }, []); // Empty dependency array ensures this runs once
   // ----------------------------
   // State Management
   // ----------------------------
@@ -116,6 +130,7 @@ export default function StockEntriesPage() {
 
   // Stock Item to Edit
   const [stockItemToEdit, setStockItemToEdit] = useState<StockItemDetails | null>(
+    
     null
   );
 
@@ -128,7 +143,7 @@ export default function StockEntriesPage() {
         name: "",
         image: "",
         stockTypeId: 0,
-        quantityType: "PACKET" as "PACKET" | "KG" | "LITER",
+        quantityType: "PACKET" as "PACKET" | "GROSS" | "WEIGHT",
         totalQuantity: 0,
         totalWeight: 0,
         finalAmount: 0,
@@ -146,7 +161,7 @@ export default function StockEntriesPage() {
       name: string;
       image: string;
       stockTypeId: number;
-      quantityType: "PACKET" | "KG" | "LITER";
+      quantityType: "PACKET" | "GROSS" | "WEIGHT";
       totalQuantity: number;
       totalWeight: number;
       finalAmount: number;
@@ -191,7 +206,7 @@ export default function StockEntriesPage() {
           typeof item.stockItem.id === "number" &&
           typeof item.stockItem.name === "string" &&
           typeof item.stockItem.stockTypeId === "number" &&
-          ["PACKET", "KG", "LITER"].includes(item.stockItem.quantityType) &&
+          ["PACKET", "GROSS", "WEIGHT"].includes(item.stockItem.quantityType) &&
           typeof item.stockItem.totalQuantity === "number" &&
           (typeof item.stockItem.totalWeight === "number" ||
             item.stockItem.totalWeight === null) &&
@@ -360,7 +375,7 @@ export default function StockEntriesPage() {
         toast.error(`Stock Item ${i + 1}: Stock Type is required.`);
         return;
       }
-      if (item.quantityType === "KG" || item.quantityType === "LITER") {
+      if (item.quantityType === "GROSS" || item.quantityType === "WEIGHT") {
         if (!item.totalWeight || item.totalWeight <= 0) {
           console.log(`Stock Item ${i + 1}: Invalid total weight`);
           toast.error(
@@ -488,7 +503,7 @@ export default function StockEntriesPage() {
         toast.error(`Stock Item ${i + 1}: Stock Type is required.`);
         return;
       }
-      if (item.quantityType === "KG" || item.quantityType === "LITER") {
+      if (item.quantityType === "GROSS" || item.quantityType === "WEIGHT") {
         if (!item.totalWeight || item.totalWeight <= 0) {
           console.error(`Validation failed: Stock Item ${i + 1} - Total Weight must be a positive number.`);
           toast.error(`Stock Item ${i + 1}: Total Weight must be a positive number.`);
@@ -786,8 +801,8 @@ export default function StockEntriesPage() {
     console.log("Validation passed: Stock Type ID is present.");
   
     if (
-      stockItemToEdit.quantityType === "KG" ||
-      stockItemToEdit.quantityType === "LITER"
+      stockItemToEdit.quantityType === "GROSS" ||
+      stockItemToEdit.quantityType === "WEIGHT"
     ) {
       console.log(
         `Quantity Type is ${stockItemToEdit.quantityType}, checking totalWeight.`
@@ -998,7 +1013,7 @@ export default function StockEntriesPage() {
     {
       accessorKey: "finalAmount",
       header: "Final Amount",
-      cell: ({ row }) => `$${row.getValue("finalAmount").toFixed(2)}`,
+      cell: ({ row }) => `${row.getValue("finalAmount").toFixed(2)}`,
     },
     {
       accessorKey: "status",
@@ -1110,7 +1125,7 @@ const stockEntryActiveColumns: ColumnDef<StockItemDetails>[] = [
   {
     accessorKey: "finalAmount",
     header: "Final Amount",
-    cell: ({ row }) => `$${row.getValue("finalAmount").toFixed(2)}`,
+    cell: ({ row }) => `${row.getValue("finalAmount").toFixed(2)}`,
   },
   {
     accessorKey: "status",
@@ -1153,6 +1168,40 @@ const activeStockItems: StockItemDetails[] = useMemo(() => {
       .filter((item) => item.status === "ACTIVE")
   );
 }, [stockEntries]);
+
+const calculateFinalAmount = () => {
+  switch (stockItemToEdit.quantityType) {
+    case 'PACKET':
+      return stockItemToEdit.totalQuantity * 100;
+    case 'GROSS':
+      return stockItemToEdit.totalQuantity * 144;
+    default:
+      return 0; // Or any other fallback value
+  }
+};
+
+const [formattedFinalAmount, setFormattedFinalAmount] = useState('');
+
+  // Effect to calculate and format finalAmount whenever relevant fields change
+  useEffect(() => {
+    if (stockItemToEdit) {
+      const calculatedAmount = calculateFinalAmount();
+      setStockItemToEdit((prev) => ({
+        ...prev,
+        finalAmount: calculatedAmount,
+      }));
+      setFormattedFinalAmount(`${calculatedAmount}`);
+    }
+  }, [stockItemToEdit?.quantityType, stockItemToEdit?.totalQuantity]);
+// Handler for when the input value changes
+const handleFinalAmountChange = (e) => {
+  const value = parseFloat(e.target.value);
+  setStockItemToEdit({
+    ...stockItemToEdit,
+    finalAmount: isNaN(value) ? 0 : value,
+  });
+};
+
   const stockEntryColumns: ColumnDef<StockEntry>[] = [
     {
       accessorKey: "id",
@@ -1214,6 +1263,7 @@ const activeStockItems: StockItemDetails[] = useMemo(() => {
                 <EditIcon className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenu.Item>
+              { userInfo.role === "SUPER_ADMIN" &&(
               <DropdownMenu.Item
                 className="flex items-center p-2 hover:bg-gray-100 cursor-pointer text-red-500"
                 onSelect={() => handleDeleteStockEntry(entry.id)}
@@ -1221,6 +1271,7 @@ const activeStockItems: StockItemDetails[] = useMemo(() => {
                 <TrashIcon className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenu.Item>
+      )}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         );
@@ -1260,7 +1311,7 @@ Stocks Management
       <TabsList>
     <TabsTrigger value="Party">Party</TabsTrigger>
     <TabsTrigger value="Active">Active</TabsTrigger>
-    {role === "SUPER_ADMIN" && (
+    {userInfo.role === "SUPER_ADMIN" && (
     <TabsTrigger value="Consume">Consume</TabsTrigger>
     )}
     
@@ -1436,7 +1487,7 @@ Stocks Management
                           <EditIcon className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button
+                       {userInfo.role === "SUPER_ADMIN" &&( <Button
                           variant="ghost"
                           size="sm"
                           className="text-red-500 flex items-center"
@@ -1444,7 +1495,7 @@ Stocks Management
                         >
                           <TrashIcon className="h-4 w-4 mr-1" />
                           Delete
-                        </Button>
+                        </Button>)}
                       </div>
                     </div>
                   ))}
@@ -1500,19 +1551,25 @@ Stocks Management
                   htmlFor={`edit-stock-item-image-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Image URL
+                  Upload Image
                 </label>
                 <Input
                   id={`edit-stock-item-image-${stockItemToEdit.id}`}
-                  type="url"
-                  value={stockItemToEdit.image}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      image: e.target.value,
-                    })
-                  }
-                  placeholder="Enter image URL"
+                  type="file"
+                  accept="image/*" // Accept only image files
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setStockItemToEdit({
+                          ...stockItemToEdit,
+                          image: reader.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file); // Convert file to base64 string
+                    }
+                  }}
                 />
               </div>
 
@@ -1561,20 +1618,20 @@ Stocks Management
                   onChange={(e) =>
                     setStockItemToEdit({
                       ...stockItemToEdit,
-                      quantityType: e.target.value as "PACKET" | "KG" | "LITER",
+                      quantityType: e.target.value as "PACKET" | "GROSS" | "WEIGHT",
                     })
                   }
                   className="w-full border rounded px-2 py-1"
                   required
                 >
                   <option value="PACKET">PACKET</option>
-                  <option value="KG">KG</option>
-                  <option value="LITER">LITER</option>
+                  <option value="GROSS">GROSS</option>
+                  <option value="WEIGHT">WEIGHT</option>
                 </select>
               </div>
 
               {/* Total Quantity Field */}
-              <div>
+              {stockItemToEdit.quantityType !== "WEIGHT" &&(<div>
                 <label
                   htmlFor={`edit-stock-item-totalQuantity-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
@@ -1593,11 +1650,11 @@ Stocks Management
                   }
                   required
                 />
-              </div>
+              </div>)}
 
               {/* Total Weight Field (Conditional) */}
-              {(stockItemToEdit.quantityType === "KG" ||
-                stockItemToEdit.quantityType === "LITER") && (
+              {
+                stockItemToEdit.quantityType === "WEIGHT" && (
                 <div>
                   <label
                     htmlFor={`edit-stock-item-totalWeight-${stockItemToEdit.id}`}
@@ -1614,6 +1671,7 @@ Stocks Management
                       setStockItemToEdit({
                         ...stockItemToEdit,
                         totalWeight: parseFloat(e.target.value),
+                        totalQuantity:0,
                       })
                     }
                     required
@@ -1623,25 +1681,12 @@ Stocks Management
 
               {/* Final Amount Field */}
               <div>
-                <label
-                  htmlFor={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Final Amount ($)
-                </label>
-                <Input
-                  id={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  type="number"
-                  step="0.01"
-                  value={stockItemToEdit.finalAmount}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      finalAmount: parseFloat(e.target.value),
-                    })
-                  }
-                  required
-                />
+              <div
+          id={`final-amount-${stockItemToEdit.id}`}
+          className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md p-2"
+        >
+          {formattedFinalAmount}
+        </div>
               </div>
 
               {/* Status Field */}
@@ -1817,16 +1862,22 @@ Stocks Management
                       htmlFor={`new-stock-item-image-${index}`}
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Image URL
+                      Upload Image
                     </label>
                     <Input
                       id={`new-stock-item-image-${index}`}
-                      type="url"
-                      value={item.image}
-                      onChange={(e) =>
-                        handleNewStockItemChange(index, "image", e.target.value)
-                      }
-                      placeholder="Enter image URL or sample name"
+                      type="file"
+                      accept="image/*" // Accept only image files
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            handleNewStockItemChange(index, "image", reader.result as string);
+                          };
+                          reader.readAsDataURL(file); // Convert file to base64 string
+                        }
+                      }}
                     />
                   </div>
                   {/* Stock Type Field */}
@@ -1882,8 +1933,8 @@ Stocks Management
                       required
                     >
                       <option value="PACKET">PACKET</option>
-                      <option value="KG">KG</option>
-                      <option value="LITER">LITER</option>
+                      <option value="GROSS">GROSS</option>
+                      <option value="WEIGHT">WEIGHT</option>
                     </select>
                   </div>
                   {/* Total Quantity Field */}
@@ -1909,8 +1960,8 @@ Stocks Management
                     />
                   </div>
                   {/* Total Weight Field (Conditional) */}
-                  {(item.quantityType === "KG" ||
-                    item.quantityType === "LITER") && (
+                  {(item.quantityType === "GROSS" ||
+                    item.quantityType === "WEIGHT") && (
                     <div className="mb-2">
                       <label
                         htmlFor={`new-stock-item-totalWeight-${index}`}
@@ -2103,20 +2154,22 @@ Stocks Management
                       htmlFor={`edit-stock-item-image-${index}`}
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Image URL
+                      Upload Image
                     </label>
                     <Input
                       id={`edit-stock-item-image-${index}`}
-                      type="url"
-                      value={item.image}
-                      onChange={(e) =>
-                        handleEditStockItemChange(
-                          index,
-                          "image",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Enter image URL or sample name"
+                      type="file"
+                      accept="image/*" // Accept only image files
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            handleEditStockItemChange(index, "image", reader.result as string);
+                          };
+                          reader.readAsDataURL(file); // Convert file to base64 string
+                        }
+                      }}
                     />
                   </div>
                   {/* Stock Type Field */}
@@ -2172,8 +2225,8 @@ Stocks Management
                       required
                     >
                       <option value="PACKET">PACKET</option>
-                      <option value="KG">KG</option>
-                      <option value="LITER">LITER</option>
+                      <option value="GROSS">GROSS</option>
+                      <option value="WEIGHT">WEIGHT</option>
                     </select>
                   </div>
                   {/* Total Quantity Field */}
@@ -2199,8 +2252,8 @@ Stocks Management
                     />
                   </div>
                   {/* Total Weight Field (Conditional) */}
-                  {(item.quantityType === "KG" ||
-                    item.quantityType === "LITER") && (
+                  {(item.quantityType === "GROSS" ||
+                    item.quantityType === "WEIGHT") && (
                     <div className="mb-2">
                       <label
                         htmlFor={`edit-stock-item-totalWeight-${index}`}
@@ -2294,225 +2347,7 @@ Stocks Management
       </Modal>
 
       {/* Modal for Editing a Specific Stock Item */}
-      <Modal
-        isOpen={isEditStockItemModalOpen}
-        onClose={() => {
-          setIsEditStockItemModalOpen(false);
-          setStockItemToEdit(null);
-        }}
-      >
-        <div className="max-h-[80vh] overflow-y-auto">
-          <h2 className="text-xl font-semibold mb-4">Edit Stock Item</h2>
-          {stockItemToEdit && (
-            <form onSubmit={submitEditStockItem} className="space-y-4">
-              {/* Name Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-name-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Name
-                </label>
-                <Input
-                  id={`edit-stock-item-name-${stockItemToEdit.id}`}
-                  type="text"
-                  value={stockItemToEdit.name}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      name: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-
-              {/* Image Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-image-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Image URL
-                </label>
-                <Input
-                  id={`edit-stock-item-image-${stockItemToEdit.id}`}
-                  type="url"
-                  value={stockItemToEdit.image}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      image: e.target.value,
-                    })
-                  }
-                  placeholder="Enter image URL"
-                />
-              </div>
-
-              {/* Stock Type Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-stockType-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Stock Type
-                </label>
-                <Select
-                  id={`edit-stock-item-stockType-${stockItemToEdit.id}`}
-                  options={stockTypeOptions}
-                  value={
-                    stockItemToEdit.stockTypeId
-                      ? stockTypeOptions.find(
-                          (opt) => opt.value === stockItemToEdit.stockTypeId
-                        )
-                      : null
-                  }
-                  onChange={(selected) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      stockTypeId: selected ? selected.value : 0,
-                    })
-                  }
-                  isClearable
-                  placeholder="-- Select Stock Type --"
-                  classNamePrefix="react-select"
-                  required
-                />
-              </div>
-
-              {/* Quantity Type Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-quantityType-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Quantity Type
-                </label>
-                <select
-                  id={`edit-stock-item-quantityType-${stockItemToEdit.id}`}
-                  value={stockItemToEdit.quantityType}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      quantityType: e.target.value as
-                        | "PACKET"
-                        | "KG"
-                        | "LITER",
-                    })
-                  }
-                  className="w-full border rounded px-2 py-1"
-                  required
-                >
-                  <option value="PACKET">PACKET</option>
-                  <option value="KG">KG</option>
-                  <option value="LITER">LITER</option>
-                </select>
-              </div>
-
-              {/* Total Quantity Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-totalQuantity-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Total Quantity
-                </label>
-                <Input
-                  id={`edit-stock-item-totalQuantity-${stockItemToEdit.id}`}
-                  type="number"
-                  value={stockItemToEdit.totalQuantity}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      totalQuantity: parseInt(e.target.value),
-                    })
-                  }
-                  required
-                />
-              </div>
-
-              {/* Total Weight Field (Conditional) */}
-              {(stockItemToEdit.quantityType === "KG" ||
-                stockItemToEdit.quantityType === "LITER") && (
-                <div>
-                  <label
-                    htmlFor={`edit-stock-item-totalWeight-${stockItemToEdit.id}`}
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Total Weight
-                  </label>
-                  <Input
-                    id={`edit-stock-item-totalWeight-${stockItemToEdit.id}`}
-                    type="number"
-                    step="0.01"
-                    value={stockItemToEdit.totalWeight}
-                    onChange={(e) =>
-                      setStockItemToEdit({
-                        ...stockItemToEdit,
-                        totalWeight: parseFloat(e.target.value),
-                      })
-                    }
-                    required
-                  />
-                </div>
-              )}
-
-              {/* Final Amount Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Final Amount ($)
-                </label>
-                <Input
-                  id={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  type="number"
-                  step="0.01"
-                  value={stockItemToEdit.finalAmount}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      finalAmount: parseFloat(e.target.value),
-                    })
-                  }
-                  required
-                />
-              </div>
-
-              {/* Status Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-status-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Status
-                </label>
-                <select
-                  id={`edit-stock-item-status-${stockItemToEdit.id}`}
-                  value={stockItemToEdit.status}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      status: e.target.value as "ACTIVE" | "CONSUMED",
-                    })
-                  }
-                  className="w-full border rounded px-2 py-1"
-                  required
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="CONSUMED">CONSUMED</option>
-                </select>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end">
-                <Button type="submit">Update Stock Item</Button>
-              </div>
-            </form>
-          )}
-        </div>
-      </Modal>
+    
       </TabsContent>
 
       <TabsContent value="Active">
@@ -2561,54 +2396,29 @@ Stocks Management
                   htmlFor={`edit-stock-item-image-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Image URL
+                  Upload Image
                 </label>
                 <Input
                   id={`edit-stock-item-image-${stockItemToEdit.id}`}
-                  type="url"
-                  value={stockItemToEdit.image}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      image: e.target.value,
-                    })
-                  }
-                  placeholder="Enter image URL"
+                  type="file"
+                  accept="image/*" // Accept only image files
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setStockItemToEdit({
+                          ...stockItemToEdit,
+                          image: reader.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file); // Convert file to base64 string
+                    }
+                  }}
                 />
               </div>
 
               {/* Stock Type Field */}
-              <div>
-                <label
-                  htmlFor={`edit-stock-item-stockType-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Stock Type
-                </label>
-                <Select
-                  id={`edit-stock-item-stockType-${stockItemToEdit.id}`}
-                  options={stockTypeOptions}
-                  value={
-                    stockItemToEdit.stockTypeId
-                      ? stockTypeOptions.find(
-                          (opt) => opt.value === stockItemToEdit.stockTypeId
-                        )
-                      : null
-                  }
-                  onChange={(selected) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      stockTypeId: selected ? selected.value : 0,
-                    })
-                  }
-                  isClearable
-                  placeholder="-- Select Stock Type --"
-                  classNamePrefix="react-select"
-                  required
-                />
-              </div>
-
-              {/* Quantity Type Field */}
               <div>
                 <label
                   htmlFor={`edit-stock-item-quantityType-${stockItemToEdit.id}`}
@@ -2622,23 +2432,20 @@ Stocks Management
                   onChange={(e) =>
                     setStockItemToEdit({
                       ...stockItemToEdit,
-                      quantityType: e.target.value as
-                        | "PACKET"
-                        | "KG"
-                        | "LITER",
+                      quantityType: e.target.value as "PACKET" | "GROSS" | "WEIGHT",
                     })
                   }
                   className="w-full border rounded px-2 py-1"
                   required
                 >
                   <option value="PACKET">PACKET</option>
-                  <option value="KG">KG</option>
-                  <option value="LITER">LITER</option>
+                  <option value="GROSS">GROSS</option>
+                  <option value="WEIGHT">WEIGHT</option>
                 </select>
               </div>
 
               {/* Total Quantity Field */}
-              <div>
+              {stockItemToEdit.quantityType !== "WEIGHT" &&(<div>
                 <label
                   htmlFor={`edit-stock-item-totalQuantity-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
@@ -2657,11 +2464,11 @@ Stocks Management
                   }
                   required
                 />
-              </div>
+              </div>)}
 
               {/* Total Weight Field (Conditional) */}
-              {(stockItemToEdit.quantityType === "KG" ||
-                stockItemToEdit.quantityType === "LITER") && (
+              {
+                stockItemToEdit.quantityType === "WEIGHT" && (
                 <div>
                   <label
                     htmlFor={`edit-stock-item-totalWeight-${stockItemToEdit.id}`}
@@ -2678,6 +2485,7 @@ Stocks Management
                       setStockItemToEdit({
                         ...stockItemToEdit,
                         totalWeight: parseFloat(e.target.value),
+                        totalQuantity:0,
                       })
                     }
                     required
@@ -2687,27 +2495,13 @@ Stocks Management
 
               {/* Final Amount Field */}
               <div>
-                <label
-                  htmlFor={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Final Amount ($)
-                </label>
-                <Input
-                  id={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  type="number"
-                  step="0.01"
-                  value={stockItemToEdit.finalAmount}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      finalAmount: parseFloat(e.target.value),
-                    })
-                  }
-                  required
-                />
+              <div
+          id={`final-amount-${stockItemToEdit.id}`}
+          className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md p-2"
+        >
+          {formattedFinalAmount}
+        </div>
               </div>
-
               {/* Status Field */}
               <div>
                 <label
@@ -2743,7 +2537,7 @@ Stocks Management
       </Modal>
       </TabsContent>
 
-      {role === "SUPER_ADMIN" && (
+      {userInfo.role === "SUPER_ADMIN" && (
   <TabsContent value="Consume">
     <DataTable
       columns={stockEntryConsumeColumns}
@@ -2789,19 +2583,25 @@ Stocks Management
                   htmlFor={`edit-stock-item-image-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Image URL
+                  Upload Image
                 </label>
                 <Input
                   id={`edit-stock-item-image-${stockItemToEdit.id}`}
-                  type="url"
-                  value={stockItemToEdit.image}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      image: e.target.value,
-                    })
-                  }
-                  placeholder="Enter image URL"
+                  type="file"
+                  accept="image/*" // Accept only image files
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setStockItemToEdit({
+                          ...stockItemToEdit,
+                          image: reader.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file); // Convert file to base64 string
+                    }
+                  }}
                 />
               </div>
 
@@ -2850,23 +2650,20 @@ Stocks Management
                   onChange={(e) =>
                     setStockItemToEdit({
                       ...stockItemToEdit,
-                      quantityType: e.target.value as
-                        | "PACKET"
-                        | "KG"
-                        | "LITER",
+                      quantityType: e.target.value as "PACKET" | "GROSS" | "WEIGHT",
                     })
                   }
                   className="w-full border rounded px-2 py-1"
                   required
                 >
                   <option value="PACKET">PACKET</option>
-                  <option value="KG">KG</option>
-                  <option value="LITER">LITER</option>
+                  <option value="GROSS">GROSS</option>
+                  <option value="WEIGHT">WEIGHT</option>
                 </select>
               </div>
 
               {/* Total Quantity Field */}
-              <div>
+              {stockItemToEdit.quantityType !== "WEIGHT" &&(<div>
                 <label
                   htmlFor={`edit-stock-item-totalQuantity-${stockItemToEdit.id}`}
                   className="block text-sm font-medium text-gray-700"
@@ -2885,11 +2682,11 @@ Stocks Management
                   }
                   required
                 />
-              </div>
+              </div>)}
 
               {/* Total Weight Field (Conditional) */}
-              {(stockItemToEdit.quantityType === "KG" ||
-                stockItemToEdit.quantityType === "LITER") && (
+              {
+                stockItemToEdit.quantityType === "WEIGHT" && (
                 <div>
                   <label
                     htmlFor={`edit-stock-item-totalWeight-${stockItemToEdit.id}`}
@@ -2906,6 +2703,7 @@ Stocks Management
                       setStockItemToEdit({
                         ...stockItemToEdit,
                         totalWeight: parseFloat(e.target.value),
+                        totalQuantity:parseInt(0),
                       })
                     }
                     required
@@ -2915,25 +2713,12 @@ Stocks Management
 
               {/* Final Amount Field */}
               <div>
-                <label
-                  htmlFor={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Final Amount ($)
-                </label>
-                <Input
-                  id={`edit-stock-item-finalAmount-${stockItemToEdit.id}`}
-                  type="number"
-                  step="0.01"
-                  value={stockItemToEdit.finalAmount}
-                  onChange={(e) =>
-                    setStockItemToEdit({
-                      ...stockItemToEdit,
-                      finalAmount: parseFloat(e.target.value),
-                    })
-                  }
-                  required
-                />
+              <div
+          id={`final-amount-${stockItemToEdit.id}`}
+          className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md p-2"
+        >
+          {formattedFinalAmount}
+        </div>
               </div>
 
               {/* Status Field */}

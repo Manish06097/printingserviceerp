@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import { DataTable } from "@/components/ui/data-table";
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,36 @@ interface OptionType {
 }
 
 export default function EmployeeManagementPage() {
+  const router = useRouter();
+  const [userInfo, setUserInfo] = useState({
+    userId: "",
+    name: "",
+    email: "",
+    role: "ADMIN", // Default role
+  });
+  useEffect(() => {
+    const getCookieValue = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+      return '';
+    };
+
+    
+
+    // Fetch cookies in the client
+    const userId = getCookieValue('userId');
+    const name = getCookieValue('name');
+    const email = getCookieValue('email');
+    const role = getCookieValue('role');
+    if (role !== 'SUPER_ADMIN') {
+      // Redirect unauthorized users
+      router.push('/dashboard');
+    }
+
+    // Set the userInfo state based on the cookie values
+    setUserInfo({ userId, name, email, role });
+  }, [router]); // Empty dependency array ensures this runs once
   // Constants for default times
   const DEFAULT_CHECKIN = "09:00";
   const DEFAULT_CHECKOUT = "21:00";
@@ -497,6 +528,7 @@ export default function EmployeeManagementPage() {
     {
       accessorKey: "id",
       header: "ID",
+      size:20
     },
     {
       accessorKey: "name",

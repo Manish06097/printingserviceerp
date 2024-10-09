@@ -52,6 +52,8 @@ export default function DashboardLayout({
 
     // Set the userInfo state based on the cookie values
     setUserInfo({ userId, name, email, role });
+
+    
   }, []); // Empty dependency array ensures this runs once
 
   return (
@@ -95,12 +97,23 @@ function DesktopNav({ userInfo }: { userInfo: { userId: string, name: string, em
     <Users className="h-5 w-5" /> {/* Replacing with Users icon */}
   </NavItem>
 )}
-
+{userInfo.role === 'SUPER_ADMIN' && (
 <NavItem href="/dashboard/employees" label="Employee management">
   <UserCheck className="h-5 w-5" /> {/* Replacing with UserCheck icon */}
 </NavItem>
 
-<NavItem href={`/dashboard/stocks?role=${userInfo.role}`} label="Stocks Management">
+
+)}
+
+<NavItem href={"/dashboard/stocks"} label="Stocks Management">
+      <BarChart className="h-5 w-5" /> {/* Replacing with BarChart icon */}
+    </NavItem>
+
+    <NavItem href={"/dashboard/party"} label="Party Management">
+      <BarChart className="h-5 w-5" /> {/* Replacing with BarChart icon */}
+    </NavItem>
+
+    <NavItem href={"/dashboard/job"} label="Job Management">
       <BarChart className="h-5 w-5" /> {/* Replacing with BarChart icon */}
     </NavItem>
       </nav>

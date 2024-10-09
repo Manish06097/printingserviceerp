@@ -1,4 +1,6 @@
 'use client';
+
+import React from 'react';
 import {
   MoreHorizontalIcon,
   EditIcon,
@@ -6,7 +8,6 @@ import {
   PlusIcon,
   MinusIcon,
 } from "lucide-react";
-import * as React from 'react';
 import {
   ColumnDef,
   SortingState,
@@ -29,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CaretSortIcon } from '@radix-ui/react-icons';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
@@ -79,6 +80,11 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    defaultColumn: {
+      size: 200, //starting column size
+      minSize: 100, //enforced during column resizing
+      maxSize: 500, //enforced during column resizing
+    },
   });
 
   return (
@@ -93,12 +99,10 @@ export function DataTable<TData>({
           className="max-w-sm"
         />
 
-  
-        
         {/* Button Container */}
         <div className="flex justify-end mb-4 space-x-2">
-            {/* Secondary Button (Rendered Only If Props Are Provided) */}
-            {secondaryButtonText && onSecondaryButton && (
+          {/* Secondary Button (Rendered Only If Props Are Provided) */}
+          {secondaryButtonText && onSecondaryButton && (
             <Button onClick={onSecondaryButton} variant="secondary">
               <PlusIcon className="h-4 w-4 mr-2" />
               {secondaryButtonText}
@@ -106,48 +110,45 @@ export function DataTable<TData>({
           )}
           {/* Primary Button */}
           {primaryButtonText && onPrimaryButton && (
-          <Button onClick={onPrimaryButton}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-            {primaryButtonText}</Button>
+            <Button onClick={onPrimaryButton}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              {primaryButtonText}
+            </Button>
           )}
-
-
-        
         </div>
       </div>
-      
-      <div className="rounded-md border">
-        <Table>
+
+      {/* Table Container */}
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-full divide-y divide-gray-200 overflow-x-auto table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className="flex items-center cursor-pointer select-none"
-                          onClick={() => header.column.toggleSorting()}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {/* Sort Indicators */}
-                          {header.column.getIsSorted() ? (
-                            header.column.getIsSorted() === 'asc' ? (
-                              <CaretSortIcon className="ml-2 h-4 w-4" />
-                            ) : (
-                              <CaretSortIcon className="ml-2 h-4 w-4 rotate-180" />
-                            )
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <div
+                        className="flex items-center cursor-pointer select-none"
+                        onClick={() => header.column.toggleSorting()}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {/* Sort Indicators */}
+                        {header.column.getIsSorted() ? (
+                          header.column.getIsSorted() === 'asc' ? (
+                            <CaretSortIcon className="ml-2 h-4 w-4" />
                           ) : (
-                            <CaretSortIcon className="ml-2 h-4 w-4 opacity-50" />
-                          )}
-                        </div>
-                      )}
-                    </TableHead>
-                  );
-                })}
+                            <CaretSortIcon className="ml-2 h-4 w-4 rotate-180" />
+                          )
+                        ) : (
+                          <CaretSortIcon className="ml-2 h-4 w-4 opacity-50" />
+                        )}
+                      </div>
+                    )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -172,7 +173,7 @@ export function DataTable<TData>({
           </TableBody>
         </Table>
       </div>
-      
+
       {/* Pagination Controls */}
       <div className="flex items-center justify-between py-4 mt-12">
         <span className="text-sm text-muted-foreground">
