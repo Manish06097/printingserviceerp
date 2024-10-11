@@ -80,11 +80,11 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    defaultColumn: {
-      size: 200, //starting column size
-      minSize: 100, //enforced during column resizing
-      maxSize: 500, //enforced during column resizing
-    },
+    // defaultColumn: {
+    //   size: 200, //starting column size
+    //   minSize: 100, //enforced during column resizing
+    //   maxSize: 500, //enforced during column resizing
+    // },
   });
 
   return (
@@ -119,8 +119,8 @@ export function DataTable<TData>({
       </div>
 
       {/* Table Container */}
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-full divide-y divide-gray-200 overflow-x-auto table-fixed">
+      <div className="rounded-md border w-[90vw] overflow-x-auto">
+        <Table className="min-w-full divide-y divide-gray-200 overflow-x-auto">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
